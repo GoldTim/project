@@ -1,0 +1,67 @@
+{include file="public/footer"}
+<script type="text/javascript">
+    layui.define(['form', 'table', 'citypicker'], function () {
+        var $ = layui.$
+            , form = layui.form
+            , table = layui.table
+            , cityPicker = layui.citypicker;
+
+        if($("#city-picker").length > 0){
+            var currentPicker = new cityPicker("#city-picker", {
+                provincename: "provinceId",
+                cityname: "cityId",
+                districtname: "districtId",
+                level: 'districtId',// 级别
+            });
+            //currentPicker.setValue("河南省/信阳市/新县");
+        }
+        
+        //监听搜索
+        form.on('submit(LAY-form-search)', function (data) {
+            let field = data.field;
+		
+            //执行重载
+            table.reload('LAY-table-list', {
+                where: field
+            });
+        });
+        
+        //清空搜索
+        form.on('submit(LAY-form-reset)', function (data) {
+            let $form = $('div.layui-form');
+
+            $form.find('input[type="text"]').val('');
+            $form.find('select option:first').prop('selected', 'selected');
+
+            if(currentPicker){
+                currentPicker.setValue('');
+            }
+
+            let field = data.field;
+
+            for(var k in field){
+                field[k] = '';
+            }
+
+            //执行重载
+            table.reload('LAY-table-list', {
+                page: {
+                    curr: 1
+                },
+                where: field
+            });
+        });
+
+        $('div.layui-form input[type="text"]').on('keypress', function(event){
+            if(event.keyCode === 13) {
+                $('#LAY-form-search').trigger('click');
+            }
+        });
+
+        layui.table_refresh = {
+            elem: '#LAY-table-list',
+            filter: 'LAY-table-list',
+            type: 'table'
+        };
+    });
+</script>

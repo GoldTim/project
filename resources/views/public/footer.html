@@ -1,0 +1,486 @@
+<script src="__ADMIN__/js/jquery.min.js"></script>
+<script src="__ADMIN__/layuiadmin/layui/layui.js?v2"></script>
+<script src="__ADMIN__/js/common.js"></script>
+
+<script src="__ADMIN__/plugins/ckfinder/ckfinder.js"></script>
+<script src="__ADMIN__/plugins/ckfinder/handle.js"></script>
+
+<script src="__ADMIN__/layuiadmin/extends/city-picker/city-picker.data.js"></script>
+<link href="__ADMIN__/layuiadmin/extends/city-picker/city-picker.css" rel="stylesheet"/>
+<link href="__ADMIN__/layuiadmin/extends/formSelects/formSelects-v4.css" rel="stylesheet"/>
+<link href="__ADMIN__/layuiadmin/extends/dtree/dtree.css" rel="stylesheet"/>
+<link href="__ADMIN__/layuiadmin/extends/dtree/font/dtreefont.css" rel="stylesheet"/>
+
+<!-- 配置文件 -->
+<script type="text/javascript" src="__ADMIN__/xedit/ueditor.config.js"></script>
+<!-- 编辑器源码文件 -->
+<script type="text/javascript" src="__ADMIN__/xedit/ueditor.all.js"></script>
+
+<style type="text/css">
+    /* 省市区 */
+    div.J-address div.layui-form-select {
+        display: none;
+    }
+
+    div.J-address select {
+        width: 30%;
+        height: 38px;
+        line-height: 1.3;
+        line-height: 38px;
+        border-style: solid;
+        background-color: #fff;
+        border-radius: 2px;
+        display: table-cell;
+        padding-left: 10px;
+        padding-right: 30px;
+        cursor: pointer
+    }
+
+    /* 图片多选 */
+    ul.layui-ul {
+        padding: 0;
+    }
+
+    ul.layui-ul li {
+        float: left;
+        text-align: center;
+        padding: 2px;
+        position: relative;
+        list-style: none;
+    }
+
+    ul.layui-ul li .del-btn {
+        position: absolute;
+        right: 0;
+        top: 0;
+        width: 20px;
+        height: 20px;
+        z-index: 1;
+        display: none;
+        background-color: #d1d1d1;
+        font-size: 1.5em;
+    }
+
+    ul.layui-ul li:hover .del-btn {
+        display: inline-block;
+    }
+
+    ul.layui-ul li a {
+        color: #337ab7;
+    }
+
+    /* 文字颜色 */
+    .layui-red {
+        color: #FF5722 !important;
+    }
+
+    .layui-form-radio {
+        margin-top: 0 !important;
+    }
+
+</style>
+<script type="text/javascript" src="__ADMIN__/plugins/jQueryProvinces/area.js"></script>
+<script type="text/javascript" src="__ADMIN__/plugins/jQueryProvinces/select.js"></script>
+<script src="__ADMIN__/js/download2.js"></script>
+
+<script type="text/javascript">
+
+    //监听返回上一页并且刷新页面
+    window.addEventListener('pageshow', function (event) {
+        if (event.persisted) { // ios 有效, android 和 pc 每次都是 false
+            loading()
+            location.reload();
+        } else { // ios 除外
+            if (sessionStorage.getItem('refresh') === 'true') {
+                loading()
+                location.reload();
+            }
+        }
+        sessionStorage.removeItem('refresh');
+    });
+
+
+    /*
+    * 使用download.js 强制浏览器下载图片、视频等文件
+    * @param {any} url url链接地址
+    * @param {any} strFileName 文件名
+    * @param {any} strMimeType 文件类型
+     */
+    function downloadfile(url, strFileName, strMimeType) {
+        var xmlHttp = null;
+        if (window.ActiveXObject) {
+            // IE6, IE5 浏览器执行代码
+            xmlHttp = new ActiveXObject("Microsoft.XMLHTTP");
+        } else if (window.XMLHttpRequest) {
+            // IE7+, Firefox, Chrome, Opera, Safari 浏览器执行代码
+            xmlHttp = new XMLHttpRequest();
+        }
+        //2.如果实例化成功，就调用open（）方法：
+        if (xmlHttp != null) {
+            xmlHttp.open("get", url, true);
+            xmlHttp.responseType = 'blob';//关键
+            xmlHttp.send();
+            xmlHttp.onreadystatechange = doResult; //设置回调函数
+        }
+
+        function doResult() {
+            if (xmlHttp.readyState == 4) { //4表示执行完成
+                if (xmlHttp.status == 200) { //200表示执行成功
+                    download(xmlHttp.response, strFileName, strMimeType);
+                }
+            }
+        }
+    }
+
+
+    //获取url的值
+    function urlData(variable) {
+        var reg = new RegExp("(^|&)" + variable + "=([^&]*)(&|$)", "i");
+        var r = window.location.search.substr(1).match(reg);
+        if (r != null) return unescape(r[2]);
+        return null;
+    }
+
+    //导航栏和菜单栏联动功能
+    // let tol_href;
+    function getHRef(href) {
+        if (!urlData('lay_id') && !href) return
+        href = urlData('lay_id') ? urlData('lay_id') : href
+        // if(tol_href==href)return
+        let list = window.top.document.querySelectorAll('#LAY-system-side-menu a')
+        $.each(list, function (i, item) {
+            if ($(item).attr('lay-href')) {
+                if ($(item).attr('lay-href') == href) {
+                    let li_st = window.top.document.querySelectorAll('#LAY-system-side-menu .layui-nav-item,#LAY-system-side-menu dd,#LAY-system-side-menu li.layui-nav-item')
+                    $.each(li_st, function (i, item) {
+                        $(item).removeClass("layui-nav-itemed")
+                    })
+                    $(window.top.document).find("#LAY-system-side-menu dd,#LAY-system-side-menu li").removeClass('layui-this')
+                    $(item).parents('.layui-nav-item').addClass('layui-nav-itemed')
+                    $(item).parent().addClass('layui-this')
+                    $(item).parent().parents('dd').addClass('layui-nav-itemed')
+                    return false
+                }
+            }
+        });
+
+    }
+
+
+    $(document).on('click', '.dw-box', function () {
+        let url = $(this).attr('data-href')
+        preview(url)
+    })
+
+
+    $(document).on('input', '.moneyIpt', function () {
+        let obj = this
+        if (obj.value.indexOf('.') == 0) {
+            obj.value = '0' + obj.value
+        }
+        obj.value = obj.value.replace(/[^\d.]/g, "");  //清除“数字”和“.”以外的字符
+        obj.value = obj.value.replace(/\.{2,}/g, "."); //只保留第一个. 清除多余的
+        obj.value = obj.value.replace(".", "$#$").replace(/\./g, "").replace("$#$", ".");
+        obj.value = obj.value.replace(/^(\-)*(\d+)\.(\d\d).*$/, '$1$2.$3');//只能输入两个小数
+        if (obj.value.indexOf(".") < 0 && obj.value != "") {
+            obj.value = parseFloat(obj.value);
+        }
+    })
+
+    $(document).on('input', '.tol_number', function () {
+
+        this.value = this.value.replace(/\D/g, '')
+
+    })
+    // $(document).on('change','.tol_number',function(){
+
+    //     this.value=this.value.replace(/[^0-9]/g,'')
+    //     // this.value=this.value.replace(/\D/g,'')
+    //     this.value=this.value.split('.').join(' ')
+    // })
+
+    function getBreadcrumB(arr) {
+        let href = $(window.top.document).find('#LAY-system-side-menu .layui-this a').attr('lay-href')
+        let title = $(window.top.document).find('#LAY-system-side-menu .layui-this a').text()
+
+        // $(".layui-breadcrumb").append(`<span lay-separator="">/</span>`)
+        // $(".layui-breadcrumb").append(`<a lay-href="${href}">${title}</a>`)
+        let BreadcrumArr = [
+            {
+                href: '/admin/Dashboard/index.html?',
+                title: '工作台'
+            }, {
+                href,
+                title
+            }]
+        if (arr) {
+            BreadcrumArr.push(arr)
+        }
+        $(".layui-breadcrumb").html('')
+        for (let i in BreadcrumArr) {
+            if (i != 0) {
+                $(".layui-breadcrumb").append(`<span lay-separator="">/</span><a lay-href="${BreadcrumArr[i].href}">${BreadcrumArr[i].title}</a>`)
+            } else {
+                $(".layui-breadcrumb").append(`<a lay-href="${BreadcrumArr[i].href}">${BreadcrumArr[i].title}</a>`)
+            }
+
+        }
+
+    }
+
+    // 两个浮点数相减
+    function accSub(num1, num2) {
+        var r1, r2, m;
+        try {
+            r1 = num1.toString().split('.')[1].length;
+        } catch (e) {
+            r1 = 0;
+        }
+        try {
+            r2 = num2.toString().split(".")[1].length;
+        } catch (e) {
+            r2 = 0;
+        }
+        m = Math.pow(10, Math.max(r1, r2));
+        n = (r1 >= r2) ? r1 : r2;
+        return (Math.round(num1 * m - num2 * m) / m).toFixed(n);
+    }
+
+    /**
+     ** 除法函数，用来得到精确的除法结果
+     ** 说明：javascript的除法结果会有误差，在两个浮点数相除的时候会比较明显。这个函数返回较为精确的除法结果。
+     ** 调用：accDiv(arg1,arg2)
+     ** 返回值：arg1除以arg2的精确结果
+     **/
+    function accDiv(arg1, arg2) {
+        var t1 = 0, t2 = 0, r1, r2;
+        try {
+            t1 = arg1.toString().split(".")[1].length;
+        } catch (e) {
+        }
+        try {
+            t2 = arg2.toString().split(".")[1].length;
+        } catch (e) {
+        }
+        with (Math) {
+            r1 = Number(arg1.toString().replace(".", ""));
+            r2 = Number(arg2.toString().replace(".", ""));
+            return (r1 / r2) * Math.pow(10, t2 - t1);
+        }
+    }
+
+    /**
+     ** 加法函数，用来得到精确的加法结果
+     ** 说明：javascript的加法结果会有误差，在两个浮点数相加的时候会比较明显。这个函数返回较为精确的加法结果。
+     ** 调用：accAdd(arg1,arg2)
+     ** 返回值：arg1加上arg2的精确结果
+     **/
+    function accAdd(arg1, arg2) {
+        var r1, r2, m, c;
+        try {
+            r1 = arg1.toString().split(".")[1].length;
+        } catch (e) {
+            r1 = 0;
+        }
+        try {
+            r2 = arg2.toString().split(".")[1].length;
+        } catch (e) {
+            r2 = 0;
+        }
+        c = Math.abs(r1 - r2);
+        m = Math.pow(10, Math.max(r1, r2));
+        if (c > 0) {
+            var cm = Math.pow(10, c);
+            if (r1 > r2) {
+                arg1 = Number(arg1.toString().replace(".", ""));
+                arg2 = Number(arg2.toString().replace(".", "")) * cm;
+            } else {
+                arg1 = Number(arg1.toString().replace(".", "")) * cm;
+                arg2 = Number(arg2.toString().replace(".", ""));
+            }
+        } else {
+            arg1 = Number(arg1.toString().replace(".", ""));
+            arg2 = Number(arg2.toString().replace(".", ""));
+        }
+        return (arg1 + arg2) / m;
+    }
+
+    /**
+     ** 乘法函数，用来得到精确的乘法结果
+     ** 说明：javascript的乘法结果会有误差，在两个浮点数相乘的时候会比较明显。这个函数返回较为精确的乘法结果。
+     ** 调用：accMul(arg1,arg2)
+     ** 返回值：arg1乘以 arg2的精确结果
+     **/
+    function accMul(arg1, arg2) {
+        var m = 0, s1 = arg1.toString(), s2 = arg2.toString();
+        try {
+            m += s1.split(".")[1].length;
+        } catch (e) {
+        }
+        try {
+            m += s2.split(".")[1].length;
+        } catch (e) {
+        }
+        return Number(s1.replace(".", "")) * Number(s2.replace(".", "")) / Math.pow(10, m);
+    }
+
+    layui.config({
+        base: '__ADMIN__/layuiadmin/' //静态资源所在路径
+    }).extend({
+        index: 'lib/index', //主入口模块
+        iconPicker: 'extends/iconPicker',//下拉图标插件
+        authtree: 'extends/authtree', //树状复选框
+        selectM: 'extends/selectM', //多选插件
+        selectN: 'extends/selectN', //全部数据渲染之后无限级联
+        notice: 'extends/notice',   //notice消息提示
+        treeGrid: 'extends/treeGrid', //树形表格
+        treeTable: 'extends/treeTable', //table表格
+        dtree: 'extends/dtree/dtree', //下拉树形菜单
+        selectTree: 'extends/dtree/selectTree', //下拉树形菜单
+        citypicker: '{/}__ADMIN__/layuiadmin/extends/city-picker/city-picker', //省市区
+        treetable: '{/}__ADMIN__/layuiadmin/extends/treetable/treetable', //树形表格
+        formSelects: '{/}__ADMIN__/layuiadmin/extends/formSelects/formSelects-v4', //多选下拉框
+        ckplayer: 'extends/ckplayer/ckplayer', //播放器插件
+        cropper: 'extends/cropper/cropper', //图片裁剪插件
+        croppersFace: 'extends/cropper/croppersFace', //头像上传裁剪组件封装
+        croppersImg: 'extends/cropper/croppersImg', //图片裁剪组件封装
+        // echarts: 'lib/extend/echarts', //echarts图
+        // echartsTheme: 'lib/extend/echartsTheme', //echartsTheme
+        transfer: 'layui/lay/modules/transfer', //穿梭框
+        iconHhysFa: 'iconHhys/iconHhysFa'
+    }).use(['jquery', 'form', 'notice'], function () {
+        let $ = layui.jquery,
+            form = layui.form,
+            notice = layui.notice;
+
+        // //判断当前访问浏览器是否是IE
+        // if (!!window.ActiveXObject || "ActiveXObject" in window) {
+        //     layer.msg('当前浏览器为IE浏览器，可能不支持全部功能，是否跳转下载谷歌浏览器?', {
+        //         time: 0 //不自动关闭
+        //         , btn: ['跳转下载', '留在本页']
+        //         , yes: function (index) {
+        //             //window.open("http://www.mydown.com/soft/421/472030921.shtml", '_blank');
+        //         }
+        //     });
+        // }
+
+        //自定义验证
+        form.verify({
+            name: function (value) {
+                if (value && !new RegExp("^[a-zA-Z0-9_\u4e00-\u9fa5\\s·]+$").test(value)) {
+                    return '不能有特殊字符';
+                }
+            }
+            , pass: function (value) {
+                let id = "{$data.id|default=0}";
+                if ((id <= 0 || value) && !new RegExp(/^[\S]{6,12}$/).test(value)) {
+                    return '密码必须6到12位，且不能出现空格';
+                }
+            }
+            , repass: function (value) {
+                let pass = $('#LAY_password').val();
+                if (pass && value !== pass) {
+                    return '两次密码输入不一致';
+                }
+            }
+            , mobile: function (value) {
+                if (value && !new RegExp(/^1\d{10}$/).test(value)) {
+                    return '请输入正确的手机号';
+                }
+            }
+        });
+
+        // notice组件初始化配置，同一样式只需要配置一次，非必须初始化，有默认配置
+        notice.options = {
+            closeButton: true,//显示关闭按钮
+            debug: false,//启用debug
+            positionClass: "toast-top-right",//弹出的位置,
+            showDuration: "300",//显示的时间
+            hideDuration: "1000",//消失的时间
+            timeOut: "2000",//停留的时间
+            extendedTimeOut: "1000",//控制时间
+            showEasing: "swing",//显示时的动画缓冲方式
+            hideEasing: "linear",//消失时的动画缓冲方式
+            iconClass: 'toast-info', // 自定义图标，有内置，如不需要则传空 支持layui内置图标/自定义iconfont类名
+            onclick: false, // 关闭点击回调
+        };
+        /*notice.warning("警告！");
+        notice.info("提示！");
+        notice.error("错误！");
+        notice.success("成功！");*/
+
+        //全局设置 csrf
+        $.ajaxSetup({
+            headers: {
+                'X-CSRF-TOKEN': '{:session_id()}'
+            }
+        });
+
+        //监听 click 事件
+        $('.layui-btn').on('click', function () {
+            let click = $(this).data('click');
+            clickActive[click] ? clickActive[click].call(this) : '';
+        });
+        //监听blur绑定的事件
+        $(".input-blur").on('blur', function () {
+            let $blur = $(this).data('blur');
+            blurActive[$blur] ? blurActive[$blur].call(this) : '';
+        });
+    });
+
+    window.InitUEditor = function (id, name) {
+        if (!id) {
+            id = "content";
+        }
+        if (!name) {
+            name = "content";
+        }
+        let editor = UE.getEditor(id, {
+            toolbars: [
+                ['fullscreen', 'source', 'undo', 'redo', 'bold', 'italic', 'underline', 'forecolor', 'backcolor', 'justifyleft', 'justifyright', 'justifycenter', 'justifyjustify', 'strikethrough', 'subscript', 'simpleupload', 'insertimage', 'audio', 'inserttable', 'edittable', 'edittd', 'link']
+            ],
+            autoHeightEnabled: false,
+            autoFloatEnabled: false,
+            textarea: name,
+            removeFormatAttributes: ""
+        });
+
+        editor.ready(function () {
+            editor.addListener('beforefullscreenchange', function (event, isFullScreen) {
+                if (isFullScreen) {
+                    $("body").addClass("noscroll")
+                    $("#isFullScreen").css({"height": "100%", "width": "100%", "left": 0});
+                } else {
+                    $("body").removeClass("noscroll")
+                    $("#isFullScreen").css({"height": "800px", "width": "98%", "left": "16px"});
+                }
+            });
+        });
+        return editor;
+    }
+
+    window.preview = function (res) {
+        let url = res;
+        var FileExt = url.replace(/.+\./, "").toLowerCase();   //正则表达式获取后缀
+        if (res.indexOf('http') == -1) {
+            url = '{$oss_root}' + res;
+        }
+        let video = ['avi', 'wmv', 'mpg', 'mpeg', 'mov', 'rm', 'ram', 'swf', 'flv', 'mp4']
+        if (video.indexOf(FileExt) > -1) {
+            window.open('/static/admin/image/video.html?url=' + url)
+        } else {
+            window.open('http://ow365.cn/?i=28075&ssl=1&furl=' + url)
+        }
+        // return
+        // layerOpenImg(url);
+    }
+
+    $("input[type='number']").on("keypress", function () {
+        return (/[0-9\.]/.test(String.fromCharCode(event.keyCode)));
+    });
+
+    clickActive = {};
+</script>
+</body>
+
+</html>

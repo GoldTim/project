@@ -1,0 +1,708 @@
+<script src="../../../../SJKJ/nuohui/public/admin/help.js"></script>
+<div class="layui-fluid">
+	<div class="layui-card breadcrumb-div" style="display: none;">
+			<div class="layui-card">
+				<div class="layui-breadcrumb">
+					<a lay-href="/admin/Dashboard/index.html?">工作台</a>
+				</div>
+			</div>
+	</div>
+    <div class=" layui-form">
+        <div class="layui-card layuiadmin-card-header-auto" id="search-container" style="display: none; padding:10px 0">
+            <div class="layui-collapse">
+                <div class="layui-colla-item" style="position: relative">
+                     <h2 class="layui-colla-title">
+                        <div class="layui-inline">收起查询</div>
+                    </h2>
+                    <div class="layui-colla-content layui-form-pane layui-show" id="condition-container">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="layui-card-body">
+            <div id="click-active-container" class="layui-row">
+            </div>
+
+            <table id="LAY-table-list" lay-filter="LAY-table-list">
+            </table>
+
+            <div class="layui-hide" id="table-operate">
+            </div>
+        </div>
+    </div>
+</div>
+{include file="public/footer"}
+<style type="text/css">
+	.layui-collapse{
+		border: none;
+	}
+	.layui-colla-title {
+		background-color: white;
+	}
+	.layui-colla-content{
+		padding: 5px;
+	}
+	.layui-colla-content, .layui-colla-item{
+		border: none;
+		border-radius: 10px;
+	}
+	.layui-card-header.layuiadmin-card-header-auto {
+		border-radius: 10px;
+		background-color: white;
+	}
+	/* .layui-card{
+		padding:10px 0;
+	} */
+    #search-container i.layui-colla-icon{width: 15px;}
+    #condition-container .layui-form-label{width: 100px;padding: 8px 10px;}
+    #condition-container .layui-form-item .layui-inline{margin-bottom: 10px;}
+    .layui-table-cell { padding: 0 8px; }
+    #click-active-container .layui-btn{margin-bottom: 10px;margin-right: 10px;}
+
+    .layui-table-col-special .layui-btn,
+    .layui-table-tips-main .layui-btn{margin-right: 10px;}
+
+    #click-active-container .layui-btn+.layui-btn,
+    .layui-table-col-special .layui-btn+.layui-btn,
+    .layui-table-tips-main .layui-btn+.layui-btn{margin-left: 0;}
+	.layui-colla-title{color:#235FFF}
+	.layui-table-cell .layui-btn:last-child{
+		margin-right: 0;
+	}
+</style>
+<script type="text/javascript">
+	let Tmark = true
+	$('.layui-colla-title').click(function(){
+		if(Tmark){
+			Tmark = false
+			$('.layui-colla-title .layui-inline').html('展开查询')
+		}else{
+			Tmark = true
+			$('.layui-colla-title .layui-inline').html('收起查询')
+		}
+	})
+
+    layui.define(['form', 'element', 'table', 'laydate', 'citypicker', 'dtree', 'upload','index','admin'], function () {
+        let $ = layui.$
+            , form = layui.form
+            , element = layui.element
+            , table = layui.table
+            , laydate = layui.laydate
+            , cityPicker = layui.citypicker
+            , dtree = layui.dtree
+			, admin = layui.admin
+            , upload = layui.upload;
+			getBreadcrumB()
+
+
+        let default_options = {};
+
+        //初始化
+        layui.init = function(options) {
+            let table_default = {
+                table_elem: '#LAY-table-list', //表格ID
+                enable_remote: true,
+                table_url: '{:url("$CONTROLLER/index")}', //表格请求地址
+                table_url_param: null, //表格请求参数
+                data: [], //表格数据
+                columns: [], //表格列头
+                page: true, //是否分页
+                limit: 30, //默认分页数量
+                limits: [10,30,50,100,200], //分页数量集合
+                single: false, //是否单选
+                primary_key: 'id', //主键
+                unresize:true,
+
+                height: 'full-200', //表格高度样式
+                text: {'none': '暂无相关数据'}, //表格提示
+				is_showBbreadcrumb:true,
+                done: function (res) { //表格完成回调
+                    autoTableFiexdHeight(this.elem[0]);
+
+                    layer.closeAll('loading');
+
+                    $('.layui-laypage > a').each(function(){
+                        $(this).attr('onclick', 'layui.table_page_loading(this)');
+                    });
+                }
+            }
+            , table_add_default = {
+                add_status: true, //是否开启
+                add_url: '{:url("$CONTROLLER/edit")}', //地址
+                add_submit_url: '{:url("$CONTROLLER/edit")}', //提交地址
+                add_submit_callback: null, //提交回调
+                add_title: '新增', //标题
+                add_width: '95%', //宽度
+                add_height: '95%', //高度
+                add_cancel_callback_func: null, //弹窗取消回调
+                add_form_type: 'dialog' //打开方式 dialog=弹窗，page=页面
+            }
+            , table_edit_default = {
+                edit_status: true, //是否开启
+                edit_url: '{:url("$CONTROLLER/edit")}', //地址
+                edit_submit_url: '{:url("$CONTROLLER/edit")}', //提交地址
+                edit_submit_callback: null, //提交回调
+                edit_title: '编辑', //标题
+                edit_width: '95%', //宽度
+                edit_height: '95%', //高度
+                edit_cancel_callback_func: null, //弹窗取消回调
+                edit_form_type: 'dialog' //打开方式 dialog=弹窗，page=页面
+            }
+            , table_view_default = {
+                view_status: false, //是否开启
+                view_url: '{:url("$CONTROLLER/view")}', //地址
+                view_title: '查看', //标题
+                view_width: '95%', //宽度
+                view_height: '95%', //高度
+                view_form_type: 'dialog' //打开方式 dialog=弹窗，page=页面
+            }
+            , table_del_default = {
+                del_status: true, //是否开启
+                del_submit_url: '{:url("$CONTROLLER/ajaxDel")}', //提交地址
+                del_submit_callback: null //提交回调
+            }
+            , other_default = {
+                enable_condition: true, //是否开启搜索条件
+                condition_container_box: '#condition-container-box', //搜索容器ID
+                lay_date_array: [], //时间集合
+                city_picker_array: [], //省市区集合
+                tree_select_array: [], //树形下拉框filter集合
+                toolbar: true, //是否开启工具栏
+                toolbar_width: 155, //工具栏宽度
+                toolbar_object: { //工具栏对象
+                    title: '操作', align: 'center', fixed: 'right', toolbar: '#table-operate'
+                },
+                table_operate_box: '#table-operate-box',  //工具栏容器ID
+                other_click_active_box: '#other-click-active-box', //其它按钮容器ID
+                other_click_active: null, //其它按钮事件
+                upload_file_active: [], //文件上传集合 {elem:'按钮ID', url:'上传地址', callback_done:'完成回调函数'}
+            }
+
+            default_options = $.extend({}, table_default, table_add_default, table_edit_default, table_view_default, table_del_default, other_default, options);
+
+            //初始化列表
+            init_table();
+
+            //初始化搜索条件
+            init_condition();
+
+            //初始化按钮事件
+            init_click_active();
+
+            //初始化上传事件
+            init_upload_file_active();
+        }
+
+        //初始化列表
+        function init_table(){
+			if(default_options.is_showBbreadcrumb){
+				$(".breadcrumb-div").show()
+			}
+            if(default_options.single === true){
+                default_options.columns.splice(0, 0, {type: 'radio'});
+            } else if(default_options.single === false){
+                default_options.columns.splice(0, 0, {type: 'checkbox'});
+            }else{
+				default_options.columns.splice(0, 0);
+			}
+            if(default_options.toolbar){
+                default_options.toolbar_object.width = default_options.toolbar_width;
+                default_options.columns.push(default_options.toolbar_object);
+            }
+
+            for (let k in default_options.columns){
+                default_options.columns[k].unresize = default_options.unresize;
+            }
+
+            let table_option = {
+                elem: default_options.table_elem,
+                cols: [default_options.columns],
+                page: default_options.page,
+                limit: default_options.limit,
+                limits: default_options.limits,
+                height: default_options.height,
+                text: default_options.text,
+                loading: false,
+                done: default_options.done
+            };
+
+            if(default_options.enable_remote){
+                table_option.url = default_options.table_url;
+                if(default_options.table_url_param){
+					table_option.where = default_options.table_url_param
+                }
+            } else{
+                table_option.data = default_options.data;
+            }
+
+            layer.load();
+
+            //列表管理
+            table.render(table_option);
+        }
+
+        layui.table_page_loading = function(that){
+            let dis = $(that).hasClass('layui-disabled');
+            if(dis){
+                return false;
+            }
+            layer.load();
+        }
+
+        //监听工具条
+        table.on('tool(LAY-table-list)', function (obj) {
+            let data = obj.data,
+            type = obj.event,
+            id = data[default_options.primary_key];
+
+            layui.click_active[type].call(this, id, data);
+        });
+
+        //初始化搜索条件
+        function init_condition(){
+            if(default_options.enable_condition) {
+                if ($(default_options.condition_container_box).length > 0) {
+                    $('#condition-container').prepend($(default_options.condition_container_box).html());
+					$("#condition-container>.layui-form-item").append(`<div class="search-div layui-col-md3 layui-col-xs3" >
+						    <div class="layui-inline">
+						        <button class=" mms-btn layui-btn " id="LAY-form-search" lay-submit lay-filter="LAY-form-search" style="margin-right:5px;">
+						            搜 索
+						        </button>
+						    </div>
+						    <div class="layui-inline">
+						        <button class="mms-btn layui-btn layui-btn-primary layui-border-blue " id="LAY-form-reset" lay-submit lay-filter="LAY-form-reset" style="color:#2962F5">
+						            重 置
+						        </button>
+						    </div>
+						</div>`);
+
+                    form.render('select');
+                    form.render('checkbox');
+                    form.render('radio');
+                }
+                $('#search-container').show();
+
+                if(default_options.lay_date_array.length > 0){
+                    for(let k in default_options.lay_date_array){
+                        let item = default_options.lay_date_array[k];
+
+                        if(!item.start_elem){
+                            continue;
+                        }
+
+                        //开始日期
+                        let insStart = laydate.render({
+                            elem: item.start_elem
+							,trigger:'click'
+                            ,done: function(value, date){
+
+                                let elem = this.elem.selector;
+                                for(let ik in default_options.lay_date_array){
+                                    let iitem = default_options.lay_date_array[ik];
+                                    if(iitem.start_elem != elem){
+                                        continue;
+                                    }
+
+                                    if(!iitem.ins_end){
+                                        continue;
+                                    }
+
+                                    //更新结束日期的最小日期
+                                    iitem.ins_end.config.min = lay.extend({}, date, {
+                                        month: date.month - 1
+                                    });
+                                    if(!value){
+                                        date = {
+                                            year:1900, month:1, date:1,
+                                            hours:0, minutes:0, seconds:0
+                                        };
+                                        iitem.ins_end.config.min = lay.extend({}, date, {
+                                            month: date.month - 1
+                                        });
+                                    }
+                                    //自动弹出结束日期的选择器
+                                    iitem.ins_end.config.elem[0].focus();
+                                }
+                            }
+                        });
+                        default_options.lay_date_array[k].ins_start = insStart;
+
+                        if(!item.end_elem){
+                            continue;
+                        }
+                        //结束日期
+                        let insEnd = laydate.render({
+                            elem: item.end_elem
+                            ,done: function(value, date){
+
+                                let elem = this.elem.selector;
+                                for(let ik in default_options.lay_date_array){
+                                    let iitem = default_options.lay_date_array[ik];
+                                    if(iitem.end_elem != elem){
+                                        continue;
+                                    }
+
+                                    if(!iitem.ins_start){
+                                        continue;
+                                    }
+
+                                    //更新开始日期的最大日期
+                                    iitem.ins_start.config.max = lay.extend({}, date, {
+                                        month: date.month - 1
+                                    });
+                                    if(!value){
+                                        date = {
+                                            year:3000, month:1, date:1,
+                                            hours:0, minutes:0, seconds:0
+                                        };
+                                        iitem.ins_start.config.max = lay.extend({}, date, {
+                                            month: date.month - 1
+                                        });
+                                    }
+                                }
+                            }
+                        });
+                        default_options.lay_date_array[k].ins_end = insEnd;
+                    }
+                }
+
+                if(default_options.city_picker_array.length > 0){
+                    for(let k in default_options.city_picker_array){
+                        let item = default_options.city_picker_array[k];
+
+                        let cityPicker = new cityPicker(item.elem, {
+                            provincename: item.provincename,
+                            cityname: item.cityname,
+                            districtname: item.districtname,
+                            level: item.level,// 级别
+                        });
+                        if(item.value){
+                            currentPicker.setValue(item.value);
+                        }
+                        default_options.city_picker_array[k].cityPicker = cityPicker;
+                    }
+                }
+
+                if(default_options.tree_select_array.length > 0){
+                    for(let k in default_options.tree_select_array){
+                        let item = default_options.tree_select_array[k];
+
+                        // 树形下拉框
+                        default_options.tree_select_array[k].dtree = dtree.renderSelect({
+                            elem: item.elem,
+                            url: item.url,
+                            checkbar: item.check || false,
+                            checkbarType: "self",
+                            menubar: true,
+                            //width: '100%',
+                            dataStyle: 'layuiStyle',
+                            //line: true, // 显示树线
+                            menubarTips: {group: ["moveDown", "moveUp", "refresh", "unCheckAll", "searchNode"]},
+                            selectTips: item.placeholder || '请选择',
+                            selectInputName: {
+                                nodeId: item.name,
+                                //context: item.name
+                            }
+                        });
+                    }
+                }
+            }
+
+            $('#condition-container input[type="text"]').on('keypress', function(event){
+                if(event.keyCode === 13) {
+                    $('#LAY-form-search').trigger('click');
+                }
+            });
+        }
+
+        //监听搜索
+        form.on('submit(LAY-form-search)', function (data) {
+			let field={}
+            for(let k in data.field){
+                if(k.indexOf('[') >= 0 || k.indexOf(']') >= 0){
+                    continue;
+                }
+                field[k] = data.field[k];
+            }
+
+            layer.load();
+
+			if(default_options.table_url_param){
+				field = Object.assign(default_options.table_url_param,data.field)
+			}else{
+				field = data.field;
+			}
+            //执行重载
+            table.reload('LAY-table-list', {
+                page: {
+                    curr: 1
+                },
+                where: field
+            });
+
+            return false;
+        });
+
+        //重置搜索
+        form.on('submit(LAY-form-reset)', function (data) {
+            let condition = $('#condition-container');
+			// default_options.table_url_param = null
+            condition.find('input.layui-input,select').val('');
+            // condition.find('select option:first').prop('selected', 'selected');
+
+            if(default_options.city_picker_array.length > 0){
+                for(let k in default_options.city_picker_array){
+                    let item = default_options.city_picker_array[k];
+                    if(item.cityPicker){
+                        item.cityPicker.setValue('');
+                    }
+                }
+            }
+
+            if(default_options.tree_select_array.length > 0){
+                for(let k in default_options.tree_select_array){
+                    let item = default_options.tree_select_array[k];
+
+                    item.dtree.refreshTree();
+                }
+            }
+			let field=data.field
+			for(var k in field){
+			    field[k] = '';
+			}
+			if(default_options.table_url_param){
+				field = Object.assign(default_options.table_url_param,field)
+			}else{
+				field = field;
+			}
+
+            layer.load();
+            //执行重载
+            table.reload('LAY-table-list', {
+                page: {
+                    curr: 1
+                },
+                where: field,
+
+            });
+			form.render()
+            return false;
+        });
+
+        //初始化按钮事件
+        function init_click_active(){
+            if(default_options.view_status){
+                $('#table-operate').append('<a class="tab-title" lay-event="view">查看</a>');
+            }
+            if(default_options.edit_status){
+                $('#table-operate').append('<a class="tab-title" lay-event="edit">编辑</a>');
+            }
+            if(default_options.del_status){
+                $('#table-operate').append('<a class="tab-title" lay-event="del">删除</a>');
+                if(default_options.single === false){
+                    $('#click-active-container').append('<button class="layui-btn layui-btn-sm layuiadmin-btn-event" style="float: right;" data-type="del"><i class="layui-icon layui-icon-delete"></i>批量删除</button>');
+                }
+            }
+            if(default_options.add_status){
+                $('#click-active-container').append('<button class="layui-btn layui-btn-sm layuiadmin-btn-event" data-type="add"><i class="layui-icon layui-icon-add-1"></i>增加</button>');
+            }
+            if($(default_options.table_operate_box).length > 0){
+                $('#table-operate').append($(default_options.table_operate_box).html());
+            }
+            if($(default_options.other_click_active_box).length > 0){
+                $('#click-active-container').append($(default_options.other_click_active_box).html());
+            }
+            if(default_options.other_click_active){
+                layui.click_active = $.extend(layui.click_active, default_options.other_click_active);
+            }
+
+            $('.layui-btn.layuiadmin-btn-event').on('click', function () {
+                let type = $(this).data('type');
+                layui.click_active[type] ? layui.click_active[type].call(this) : '';
+            });
+        }
+
+        //初始化上传事件
+        function init_upload_file_active(){
+            if(default_options.upload_file_active.length <= 0){
+                return;
+            }
+
+            for(let k in default_options.upload_file_active){
+                let item = default_options.upload_file_active[k];
+
+                //文件上传
+                upload.render({
+                    elem: item.elem //绑定元素
+                    , url: item.upload_url //上传接口
+                    , data: item.data || {}
+                    , accept: 'file'
+                    , exts: 'xls|xlsx'
+                    , before: function () {
+                        layer.load(); //上传loading
+                    }
+                    , done: function (res) {
+                        layer.closeAll('loading'); //关闭loading
+
+                        //上传完毕回调
+                        if (res.status == 0) {
+                            showMsg(res.message, 2, 3000);
+                        } else {
+                            if(item.callback_done){
+                                item.callback_done(res.data);
+                            } else{
+                                showMsg('上传成功', 1, 1500);
+                                table.reload('LAY-table-list'); //数据刷新
+                            }
+                        }
+                    }
+                    , error: function () {
+                        layer.closeAll('loading'); //关闭loading
+                    }
+                });
+            }
+
+        }
+
+        //按钮点击事件
+        layui.click_active = {
+            view: function(id, data){
+                let view_url = default_options.view_url;
+                if(view_url.indexOf('?') >= 0){
+                    view_url += '&' + default_options.primary_key + '=' + id;
+                } else{
+                    view_url += '?' + default_options.primary_key + '=' + id;
+                }
+                if(default_options.view_form_type == 'dialog'){
+                    openIframe(view_url, default_options.view_title, null, default_options.view_width, default_options.view_height);
+                } else if(default_options.view_form_type == 'page'){
+                    openTabsPage(view_url+'&view=true', ((data.code || data[default_options.primary_key]||data) + ' - ') + default_options.view_title);
+                }
+            },
+            add: function(){
+                if(default_options.add_form_type == 'dialog'){
+                    openOperateIframe(
+                        default_options.add_url,
+                        default_options.add_title,
+                        function(index, layero){
+                            let iframeWindow = window['layui-layer-iframe' + index]
+                                , submitID = 'LAY-form-submit'
+                                , submit = layero.find('iframe').contents().find('#' + submitID);
+                            //监听提交
+                            iframeWindow.layui.form.on('submit(' + submitID + ')', function (data) {
+                                let field = data.field; //获取提交的字段
+                                ajaxRequest(default_options.add_submit_url, 'post', field, function(success) {
+                                    if(default_options.add_submit_callback){
+                                        default_options.add_submit_callback();
+                                    } else{
+                                        showMsg('新增数据成功', 1, 1500);
+                                        table.reload('LAY-table-list'); //数据刷新
+                                        layer.close(index); //关闭弹层
+                                    }
+                                });
+                            });
+
+                            submit.trigger('click');
+                        },
+                        default_options.add_cancel_callback_func,
+                        default_options.add_width,
+                        default_options.add_height
+                    );
+                } else if(default_options.add_form_type == 'page'){
+                    openTabsPage(default_options.add_url, default_options.add_title);
+                }
+            },
+            edit: function(id){
+				let data = ''
+                if(!id) {
+                    data = table.checkStatus('LAY-table-list').data; //得到选中的数据
+                    if (data.length === 0) {
+                        return showMsg('请选择数据', 2, 2000);
+                    } else if (data.length > 1) {
+                        return showMsg('只能选择一条数据', 2, 2000);
+                    }
+
+                    id = data[default_options.primary_key];
+                }
+
+                let edit_url = default_options.edit_url;
+                if(edit_url.indexOf('?') >= 0){
+                    edit_url += '&' + default_options.primary_key + '=' + id;
+                } else{
+                    edit_url += '?' + default_options.primary_key + '=' + id;
+                }
+
+                if(default_options.edit_form_type == 'dialog'){
+                    openOperateIframe(
+                        edit_url,
+                        default_options.edit_title,
+                        function(index, layero){
+                            let iframeWindow = window['layui-layer-iframe' + index]
+                                , submitID = 'LAY-form-submit'
+                                , submit = layero.find('iframe').contents().find('#' + submitID);
+                            //监听提交
+                            iframeWindow.layui.form.on('submit(' + submitID + ')', function (data) {
+                                let field = data.field; //获取提交的字段
+                                ajaxRequest(default_options.edit_submit_url, 'post', field, function(success) {
+                                    if(default_options.edit_submit_callback){
+                                        default_options.edit_submit_callback();
+                                    } else{
+                                        showMsg('数据更新成功', 1, 1500);
+                                        table.reload('LAY-table-list'); //数据刷新
+                                        layer.close(index); //关闭弹层
+                                    }
+                                });
+                            });
+
+                            submit.trigger('click');
+                        },
+                        default_options.edit_cancel_callback_func,
+                        default_options.edit_width,
+                        default_options.edit_height
+                    );
+                } else if(default_options.edit_form_type == 'page'){
+                    openTabsPage(edit_url, ((data.code || data[default_options.primary_key]||(data?data:'')) + ' - ') + default_options.edit_title);
+                }
+            },
+            del: function(id){
+                let ids = [];
+
+                if(!id){
+                    let data = table.checkStatus('LAY-table-list').data; //得到选中的数据
+                    if (data.length === 0) {
+                        return showMsg('请选择数据', 2, 2000);
+                    }
+
+                    for(let k in data){
+                        let item = data[k];
+                        ids.push(item[default_options.primary_key]);
+                    }
+                } else{
+                    ids.push(id);
+                }
+
+                layer.confirm('确定删除吗？', function (index) {
+                    ajaxRequest(default_options.del_submit_url, 'post', {'id':ids.join(',')}, function(success) {
+                        if(default_options.del_submit_callback) {
+                            default_options.del_submit_callback();
+                        } else{
+                            showMsg('数据删除成功', 1, 1500);
+                            table.reload('LAY-table-list');
+                            layer.close(index); //关闭弹层
+                        }
+                    });
+                });
+            }
+        };
+
+        if(layui.page_init){
+            layui.page_init();
+        }
+
+        layui.table_refresh = {
+            elem: '#LAY-table-list',
+            filter: 'LAY-table-list',
+            type: 'table'
+        };
+    });
+</script>

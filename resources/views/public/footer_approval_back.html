@@ -1,0 +1,135 @@
+{if input('approval_id/d', 0) > 0}
+<div class="approval-btn layui-hide" id="drag">
+    <div>审批</div>
+</div>
+{/if}
+
+{include file="public/footer"}
+<style type="text/css">
+    .approval-btn {
+        position: fixed;
+        right: 20px;
+        bottom: 400px;
+        border-radius: 50%;
+        width: 60px;
+        height: 60px;
+        background-color: #235FFF;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+		z-index: 1000;
+    }
+
+    .approval-btn > div {
+        border: 1px solid #fff;
+        width: 50px;
+        height: 50px;
+        text-align: center;
+        color: #FFFFFF;
+        font-size: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+    }
+</style>
+<script type="text/javascript">
+    layui.define(['form'], function () {
+        let $ = layui.$
+            , form = layui.form;
+
+        let approval_id = '{:input("approval_id/d", 0)}';
+        let approval_type = '{:input("approval_type/d", 0)}';
+
+        //检查审批对象的状态
+        if($('#drag').length == 1){
+            ajaxRequest('{:url("Approval/ajaxCheckApprovalStatus")}', 'post', {approval_id: approval_id, approval_type: approval_type}, (res)=>{
+                if(res.data.show_approval == 1){
+                    $('#drag').removeClass('layui-hide');
+                }
+            });
+        }
+
+        layui.click_active = {
+            approval: function () { // 审批详情
+                let url = '{:url("Approval/index")}?id=' + approval_id;
+                openIframe(url, '审批详情', null, '500px', '90%');
+            },
+            reject: function (data) { // 驳回审批
+                ajaxRequest('{:url("$CONTROLLER/ajaxRejectApproval")}', 'post', data, (res) => {
+                    showMsg('驳回审批成功', 1, 1500, function(){
+                        window.location.reload();
+
+                        parent.layui.table.reload('LAY-table-list');
+                    });
+
+                    layer.closeAll('iframe');
+                });
+            },
+            agree: function (data) { // 同意审批
+                ajaxRequest('{:url("$CONTROLLER/ajaxAgreeApproval")}', 'post', data, (res) => {
+                    showMsg('同意审批成功', 1, 1500, function(){
+                        window.location.reload();
+
+                        parent.layui.table.reload('LAY-table-list');
+                    });
+
+                    layer.closeAll('iframe');
+                });
+            }
+        };
+
+        let isMove = false
+        let firstTime = 0
+        let lastTime = 0
+        $("div.approval-btn").on('click', function (event) {
+            if (!isMove) {
+                return layui.click_active['approval'].call(this);
+            }
+        });
+
+        $(document).on('mousedown', 'div.approval-btn', function (event) {
+            firstTime = new Date().getTime();
+            isMove = true
+            var event = event || window.event;  //兼容IE浏览器
+            var diffX = event.clientX - drag.offsetLeft;
+            var diffY = event.clientY - drag.offsetTop;
+            if (typeof drag.setCapture !== 'undefined') {
+                drag.setCapture();
+            }
+            document.onmousemove = function (event) {
+                event.stopPropagation()
+                var event = event || window.event;
+                var moveX = event.clientX - diffX;
+                var moveY = event.clientY - diffY;
+                if (moveX < 0) {
+                    moveX = 0
+                } else if (moveX > window.innerWidth - drag.offsetWidth) {
+                    moveX = window.innerWidth - drag.offsetWidth
+                }
+                if (moveY < 0) {
+                    moveY = 0
+                } else if (moveY > window.innerHeight - drag.offsetHeight) {
+                    moveY = window.innerHeight - drag.offsetHeight
+                }
+                drag.style.left = moveX + 'px';
+                drag.style.top = moveY + 'px'
+            }
+            document.onmouseup = function (event) {
+                event.stopPropagation()
+                lastTime = new Date().getTime();
+                this.onmousemove = null;
+                this.onmouseup = null;
+                //修复低版本ie bug
+                if (typeof drag.releaseCapture != 'undefined') {
+                    drag.releaseCapture();
+                }
+                if ((lastTime - firstTime) < 200) {
+                    isMove = false;
+                }
+            }
+        });
+
+    });
+</script>
