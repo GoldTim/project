@@ -23,9 +23,9 @@
         "guzzlehttp/guzzle": "^7.0.1",
         "laravel/framework": "^8.75",
         "laravel/horizon": "^5.4",
-        "laravel/sanctum": "^2.11",
         "laravel/tinker": "^2.5",
-        "swooletw/laravel-swoole": "^2.11"
+        "predis/predis": "^2.0",
+        "firebase/php-jwt": "^5.2"
     },
     "require-dev": {
         "facade/ignition": "^2.5",
