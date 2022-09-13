@@ -1,7 +1,8 @@
 <?php
 
-use App\Http\Controllers\OrderController;
-use App\Http\Controllers\TestController;
+ use App\Http\Controllers\Admin\LoginController as AdminLogin;
+use App\Http\Controllers\Admin\OrderController as AdminOrder;
+use App\Http\Controllers\NotifyController as Notify;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -19,15 +20,17 @@ Route::prefix('admin')->group(function () {
 
 Route::group([
     'domain' => 'admin.' . env('APP_URL', 'project.local.com'),
-//    'middleware' => 'AdminMiddleware'
 ], function () {
-    Route::match(['get', 'post'], 'login', [\App\Http\Controllers\Admin\LoginController::class, 'login']);
+    Route::match(['get', 'post'], 'login', [AdminLogin::class, 'login']);
     Route::group([
         'prefix' => 'order',
-        'controller' => \App\Http\Controllers\Admin\OrderController::class
+        'controller' => AdminOrder::class
     ], function () {
-        Route::match(['get', 'post'], '/', 'index')->name('admin.order.list');
+        Route::match(['get', 'post'], '/index', 'index')->name('admin.order.list');
     });
+});
+Route::prefix('notify')->group(function () {
+    Route::any('weChatPay', [Notify::class, 'weChatPay'])->name('notify.weChatPay');
 });
 
 Route::view('/', 'index');
