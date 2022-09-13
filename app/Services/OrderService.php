@@ -13,7 +13,6 @@ use App\Models\Order\Log;
 use App\Models\Refund\Log as RefundLog;
 use Exception;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 
 class OrderService extends BaseService
 {
@@ -224,6 +223,6 @@ class OrderService extends BaseService
         ]);
 
     }
-    
+
 
 }

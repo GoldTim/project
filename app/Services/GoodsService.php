@@ -15,7 +15,7 @@ class GoodsService extends BaseService
     public function getSkuList($where)
     {
         $this->model = new Sku();
-        $list = $this->getAllList($where);
+        $list = $this->getAll($where);
         return $list->map(function ($item) {
             return [
                 'shop_id' => $item['goods']['shop_id'],
