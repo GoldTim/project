@@ -86,3 +86,27 @@ if (!function_exists('ajaxError')) {
     }
 }
 
+ if (!function_exists('xmlToArray')) {
+    function xmlToArray($xml)
+    {
+        libxml_disable_entity_loader(true);
+        return collect(json_decode(json_encode(simplexml_load_string($xml, 'SimpleXMLElement', LIBXML_NOCDATA)), true))->map(function ($item) {
+            return !empty($item) ? trim($item) : [];
+        })->toArray();
+    }
+}
+if (!function_exists('arrayToXml')) {
+    function arrayToXml($data)
+    {
+        if (!is_array($data) || count($data) <= 0) return false;
+        $requestXml = "";
+        foreach ($data as $key => $val) {
+            if (is_numeric($val)) {
+                $requestXml .= "<" . $key . ">" . $val . "</" . $key . ">";
+            } else {
+                $requestXml .= "<" . $key . "><![CDATA[" . $val . "]]></" . $key . ">";
+            }
+        }
+        return "<xml>" . $requestXml . "</xml>";
+    }
+}
