@@ -35,7 +35,7 @@ class BaseService
      * @param string $order - 升降
      * @return mixed
      */
-    public function getAllList($where, $field = ["*"], string $sort = "id", string $order = "desc")
+    public function getAll($where, $field = ["*"], string $sort = "id", string $order = "desc")
     {
         return $this->model->where($where)->orderBy($sort, $order)->get($field);
     }
