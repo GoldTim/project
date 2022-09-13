@@ -15,17 +15,17 @@
     ],
     "require": {
         "php": "^7.3|^8.0",
-        "ext-bcmath": "*",
-        "ext-json": "*",
-        "ext-openssl": "*",
-        "ext-sodium": "*",
         "fruitcake/laravel-cors": "^2.0",
         "guzzlehttp/guzzle": "^7.0.1",
         "laravel/framework": "^8.75",
         "laravel/horizon": "^5.4",
         "laravel/tinker": "^2.5",
         "predis/predis": "^2.0",
-        "firebase/php-jwt": "^5.2"
+        "firebase/php-jwt": "^5.2",
+        "ext-openssl": "*",
+        "ext-bcmath": "*",
+        "ext-json": "*",
+        "ext-sodium": "*"
     },
     "require-dev": {
         "facade/ignition": "^2.5",
@@ -33,7 +33,7 @@
         "laravel/sail": "^1.0.1",
         "mockery/mockery": "^1.4.4",
         "nunomaduro/collision": "^5.10",
-        "phpunit/phpunit": "^9.5.10"
+        "phpunit/phpunit": "^9.5.10",
     },
     "autoload": {
         "psr-4": {

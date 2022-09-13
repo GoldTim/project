@@ -85,7 +85,7 @@ class OrderService extends BaseService
      * @return int|mixed
      * @throws Exception
      */
-    public function addLog($order_id, $title, string $content = '', int $user_id = 0)
+    public function addLog($order_id, $title, string $content = '', int $user_id = 0, $user_name = '系统管理员')
     {
         $this->model = new Log();
         return $this->addOne([
@@ -93,7 +93,7 @@ class OrderService extends BaseService
             'title' => $title,
             'content' => !empty($content) ? $content : $title,
             'user_id' => $user_id ?? 1,
-            'user_name' => Auth::user()['name'] ?? "系统管理员",
+            'user_name' => $user_name,
             'created_at' => time()
         ]);
     }
@@ -144,13 +144,7 @@ class OrderService extends BaseService
                 return error("支付成功但修改订单失败");
             }
         }
-        return [];
-    }
-
-    public function getRefund($id)
-    {
-        $this->model = new Refund();
-        return parent::getOne($id);
+        return succeed();
     }
 
     /**
@@ -162,7 +156,7 @@ class OrderService extends BaseService
     public function refund($params)
     {
         $this->model = new Refund();
-        $refund_id = parent::addOne([
+        $refund_id = $this->addOne([
             "order_id" => $params['order_id'],
             "refund_sn" => getSn('R', 'refund', 'refund_sn'),
             'status' => 0,
@@ -173,7 +167,7 @@ class OrderService extends BaseService
         }
         $this->model = new RefundGoods();
         foreach ($params['goods'] as $item) {
-            $res = parent::addOne([
+            $res = $this->addOne([
                 'refund_id' => $refund_id,
                 'goods_id' => $item['goods_id'],
                 'goods_name' => $item['goods_name'],
@@ -188,7 +182,7 @@ class OrderService extends BaseService
             }
         }
         $this->model = new RefundLog();
-        $res = parent::addOne([
+        $res = $this->addOne([
             'refund_id' => $refund_id,
             'title' => '用户发起售后',
             'content' => '用户发起售后',
@@ -210,12 +204,12 @@ class OrderService extends BaseService
     public function editRefund($refund_id, $params)
     {
         $this->model = new Refund();
-        $res = parent::renewal($refund_id, $params);
+        $res = $this->renewal($refund_id, $params);
         if (!$res) {
             throw new \Exception("修改失败");
         }
         $this->model = new RefundLog();
-        return parent::addOne([
+        return $this->addOne([
             'refund_id' => $refund_id,
             'title' => '修改信息',
             'content' => '修改售后信息',

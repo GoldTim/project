@@ -32,5 +32,5 @@ Route::group([
 Route::prefix('notify')->group(function () {
     Route::any('weChatPay', [Notify::class, 'weChatPay'])->name('notify.weChatPay');
 });
-
+Route::get('test',[\App\Http\Controllers\TestController::class,'test']);
 Route::view('/', 'index');

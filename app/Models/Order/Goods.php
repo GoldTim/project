@@ -32,7 +32,7 @@ class Goods extends Model
 
     public function order()
     {
-        return $this->belongsTo(Info::class, 'id', 'order_id');
+        return $this->belongsTo(Info::class,'order_id');
     }
 
 }

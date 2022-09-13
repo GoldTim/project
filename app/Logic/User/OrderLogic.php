@@ -77,12 +77,12 @@ class OrderLogic
             $ids = [];
             $payment_amount = 0;
             foreach ($params as $item) {
-                $res = $this->service->addOne($item);
-                if (!$res) {
+                $order_id = $this->service->addOne($item);
+                if (!$order_id) {
                     throw new Exception("提交订单失败");
                 }
-                $ids[] = $res;
-                $res = $this->service->addLog($res, '提交订单');
+                $ids[] = $order_id;
+                $res = $this->service->addLog($order_id, '提交订单');
                 if (!$res) {
                     throw new Exception("提交订单失败");
                 }
