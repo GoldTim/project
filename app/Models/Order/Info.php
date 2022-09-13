@@ -98,4 +98,9 @@ class Info extends Model
     {
         return $this->hasOne(Shipping::class, 'order_id');
     }
+
+    public function refund()
+    {
+        return $this->hasOne(\App\Models\Refund\Info::class, 'order_id')->orderByDesc('created_at');
+    }
 }
