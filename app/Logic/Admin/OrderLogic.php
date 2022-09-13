@@ -8,11 +8,18 @@ class OrderLogic
 {
     protected $service;
 
+    public function __construct()
+    {
+        $this->service = new OrderService();
+    }
+
     public function index($where, $page, $limit)
     {
-        $service = new OrderService();
 
-        $result = $service->getList($where, ['*'], $page, $limit);
+        $result = $this->service->getList($where, ['*'], $page, $limit);
+        foreach ($result['data'] as &$item) {
+
+        }
         return $result;
     }
 }
