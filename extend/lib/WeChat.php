@@ -207,7 +207,8 @@ class WeChat
         if (empty($config)) {
             $config = config('constant.wechat', []);
         }
-        $token = self::makeToken($config['mchId'], $method, $url, json_encode($info));
+
+        $token = self::makeToken($config['mchId'], $method, $url, $info);
         $client = new Client([
             "base_uri" => "https://api.mch.weixin.qq.com",
             "headers" => [
@@ -234,6 +235,12 @@ class WeChat
         }
     }
 
+    public static function certificates()
+    {
+        $res = self::makeRequest('/v3/certificates', 'get');
+        dd($res);
+    }
+
     /**
      * 组装验证令牌
      * @param string $data
@@ -242,13 +249,12 @@ class WeChat
      * @param string $url
      * @return string
      */
-    private static function makeToken(string $mchId, string $method, string $url, string $data = ''): string
+    private static function makeToken(string $mchId, string $method, string $url, array $data = []): string
     {
-        $nonce_str = Str::random();
+        $nonce_str = Str::random(32);
         $time = time();
-
+        $data = !empty($data) ? json_encode($data) : "";
         $str = strtoupper($method) . "\n" . $url . "\n" . $time . "\n" . $nonce_str . "\n" . $data . "\n";
-
         $key = file_get_contents(base_path(self::$apiKey));
         $raw_sign = "";
         openssl_sign($str, $raw_sign, $key, "SHA256");
