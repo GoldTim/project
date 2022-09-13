@@ -29,10 +29,10 @@ class OrderController extends Controller
 
     /**
      * 提交订单
-     * @return array
+     * @return array|\Illuminate\Http\JsonResponse
      * @throws Exception
      */
-    public function submitOrder(): array
+    public function submitOrder()
     {
         $params = $this->getData('data');
         if (!$params['succeed']) {
@@ -51,10 +51,10 @@ class OrderController extends Controller
 
     /**
      * 发起支付
-     * @return array
+     * @return array|\Illuminate\Http\JsonResponse
      * @throws ReflectionException
      */
-    public function payOrder(): array
+    public function payOrder()
     {
         $params = $this->getData('data');
         if (!$params['succeed']) {
@@ -78,10 +78,10 @@ class OrderController extends Controller
 
     /**
      * 取消
-     * @return array
+     * @return array|\Illuminate\Http\JsonResponse
      * @throws Exception
      */
-    public function cancelOrder(): array
+    public function cancelOrder()
     {
         $params = $this->getData('data');
         if (!$params['succeed']) {
