@@ -260,4 +260,12 @@ class WeChat
             $mchId, $nonce_str, $time, $serialNo, $sign);
     }
 
+
+    /**
+     * @param string $apiCert
+     */
+    public static function decryptRefund(string $str)
+    {
+//        return openssl_decrypt($str,'aes-256-ecb',md5())
+    }
 }
