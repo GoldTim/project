@@ -44,18 +44,12 @@ class Order extends Command
         $operation = $this->argument('action');
         switch ($operation) {
             case 'overTime':
-                [$ids, $update, $logArray] = $this->overTime();
-                break;
-            case 'cancel':
-                [$ids, $update, $logArray] = $this->cancel();
+                [$ids, $update, $logArray] = $this->overTimeCheck();
                 break;
             case 'listen':
+            case 'cancel':
             default:
-                [$ids, $update, $logArray] = $this->cancel();
-                $result = $this->overTime();
-                $ids = array_merge($ids, $result[0]);
-                $update = array_merge($update, $result[1]);
-                $logArray = array_merge($logArray, $result[2]);
+                [$ids, $update, $logArray] = $this->overTimePay();
                 break;
         }
         \App\Jobs\Order::dispatch($ids, $update, $logArray);
@@ -63,41 +57,49 @@ class Order extends Command
         return 0;
     }
 
-    public function cancel(): array
+
+    /**
+     * 超时未支付
+     * @return array
+     */
+    public function overTimePay(): array
     {
-        $time = strtotime("-15 minute");
-        $ids = $this->service->getAllList([
+        $where = [
             ['status', '=', 0],
-            ['pay_time', '!=', 0],
-            ['created_at', '<', $time]
-        ], ['id'])->toArray();
+            ['pay_time', '=', 0],
+            ['create_time', '<', strtotime('-15 minute')]
+        ];
+        $ids = $this->service->getAll($where, ['id']);
         $logArray = [];
         foreach ($ids as $id) {
-            $logArray[] = [
+            $logArray [] = [
                 'order_id' => $id,
-                'title' => '超出时间仍未支付.系统自动取消订单'
+                'title' => '超时未支付,系统自动取消订单'
             ];
         }
-        $update = [
-            'status' => 8,
-            'updated_at' => time(),
-            'close_type' => 0,
-            'close_reason' => '超时未支付'
-        ];
-        return [$ids, $update, $logArray];
+        $update = ['status' => 8, 'update_time' => time()];
+        return !empty($ids) ? [$ids, $update, $logArray] : [[], [], []];
     }
 
-    public function overTime(): array
+    /**
+     * 超时未收货
+     * @return array
+     */
+    public function overTimeCheck(): array
     {
-        $ids = $this->service->getAllList([['status', '=', 2], ['confirm_time', '<', time()]], ['id'])->toArray();
+        $where = [
+            ['status', '=', 2],
+            ['confirm_time', '<', time()]
+        ];
+        $ids = $this->service->getAll($where, ['id']);
         $logArray = [];
         foreach ($ids as $id) {
             $logArray[] = [
                 'order_id' => $id,
-                'title' => '超出时间仍未支付.系统自动取消订单'
+                'title' => '超时未确认收货，系统自动确认收货'
             ];
         }
-        $update = ['status' => 3, 'updated_at' => time()];
-        return [$ids, $update, $logArray];
+        $update = ['status' => 3, 'update_at' => time()];
+        return !empty($ids) ? [$ids, $update, $logArray] : [[], [], []];
     }
 }
